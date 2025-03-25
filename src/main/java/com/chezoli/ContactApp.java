@@ -26,6 +26,25 @@ public class ContactApp {
     public Scene createScene() {
         VBox root = new VBox();
         root.getStyleClass().add("root");
+        root.setSpacing(0);
+        root.setPrefWidth(1200);
+        root.setPrefHeight(800);
+        
+        ScrollPane scrollPane = new ScrollPane();
+        scrollPane.setFitToWidth(true);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.getStyleClass().add("scroll-pane");
+        
+        VBox contentContainer = new VBox(0);
+        contentContainer.getChildren().addAll(
+            createTopBar(),
+            createHeader(),
+            createContactContent(),
+            createFooter()
+        );
+        
+        scrollPane.setContent(contentContainer);
+        root.getChildren().add(scrollPane);
         
         Scene scene = new Scene(root);
         scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
