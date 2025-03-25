@@ -24,53 +24,11 @@ public class ContactApp {
     }
 
     public Scene createScene() {
-        // Main container
         VBox root = new VBox();
         root.getStyleClass().add("root");
-        root.setSpacing(0);
-        root.setPrefWidth(1200);
-        root.setPrefHeight(800);
         
-        // Create a ScrollPane to handle content
-        ScrollPane scrollPane = new ScrollPane();
-        scrollPane.setFitToWidth(true);
-        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scrollPane.getStyleClass().add("scroll-pane");
-        
-        // Content container
-        VBox contentContainer = new VBox();
-        contentContainer.setSpacing(0);
-        
-        // Top bar (contact info and social icons)
-        HBox topBar = createTopBar();
-        
-        // Header with logo and navigation
-        HBox header = createHeader();
-        
-        // Contact form section
-        VBox contactSection = createContactContent();
-        
-        // Contact info section
-        HBox contactInfo = createContactInfo();
-        
-        // Footer
-        Node footer = createFooter();
-        
-        // Add all sections to content container
-        contentContainer.getChildren().addAll(topBar, header, contactSection, contactInfo, footer);
-        
-        // Set the content container as the content of the ScrollPane
-        scrollPane.setContent(contentContainer);
-        
-        // Add ScrollPane to root
-        root.getChildren().add(scrollPane);
-        
-        // Create scene
         Scene scene = new Scene(root);
-        
-        // Load CSS
-        String cssPath = getClass().getResource("/resources/styles.css").toExternalForm();
-        scene.getStylesheets().add(cssPath);
+        scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
         
         return scene;
     }
