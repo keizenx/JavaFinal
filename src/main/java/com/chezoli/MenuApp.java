@@ -41,7 +41,7 @@ public class MenuApp {
         root.getChildren().add(scrollPane);
         
         Scene scene = new Scene(root);
-        scene.getStylesheets().add(getClass().getResource("/resources/styles.css").toExternalForm());
+        scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
         
         return scene;
     }
@@ -198,18 +198,12 @@ public class MenuApp {
             menuItem.setAlignment(Pos.CENTER);
             
             try {
-                String imagePath = "/images/Notre_Menu/" + item[0];
-                System.out.println("Trying to load image from: " + imagePath);
-                var inputStream = getClass().getResourceAsStream(imagePath);
-                if (inputStream == null) {
-                    System.err.println("Could not find image at path: " + imagePath);
-                    continue;
-                }
-                Image image = new Image(inputStream);
+                System.out.println("Trying to load image from: /images/Notre_Menu/" + item[0]);
+                Image image = new Image(getClass().getResourceAsStream("/images/Notre_Menu/" + item[0]));
                 ImageView imageView = new ImageView(image);
-                imageView.setFitWidth(200);
-                imageView.setFitHeight(200);
-                imageView.setPreserveRatio(true);
+                imageView.setFitWidth(250);
+                imageView.setFitHeight(250);
+                imageView.getStyleClass().add("menu-item-image");
                 
                 Label name = new Label(item[1]);
                 name.getStyleClass().add("menu-item-name");
