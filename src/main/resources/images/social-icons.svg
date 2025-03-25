@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="100" viewBox="0 0 400 100" xmlns="http://www.w3.org/2000/svg">
+    <!-- Twitter -->
+    <g transform="translate(0,0)">
+        <circle cx="50" cy="50" r="40" fill="#B22222"/>
+        <path d="M30,65 C45,65 60,50 60,35 C60,33 65,25 70,20 C67,22 60,25 55,25 C55,25 65,15 70,15 C65,17 55,25 55,35 C55,50 45,65 30,65" fill="white"/>
+    </g>
+    
+    <!-- Facebook -->
+    <g transform="translate(100,0)">
+        <circle cx="50" cy="50" r="40" fill="#B22222"/>
+        <path d="M45,70 L45,50 L35,50 L35,40 L45,40 L45,30 C45,25 50,20 60,20 L60,30 L55,30 C53,30 53,32 53,35 L53,40 L60,40 L58,50 L53,50 L53,70" fill="white"/>
+    </g>
+    
+    <!-- Instagram -->
+    <g transform="translate(200,0)">
+        <circle cx="50" cy="50" r="40" fill="#B22222"/>
+        <rect x="30" y="30" width="40" height="40" rx="10" fill="white"/>
+        <circle cx="50" cy="50" r="10" fill="#B22222"/>
+        <circle cx="63" cy="37" r="3" fill="#B22222"/>
+    </g>
+    
+    <!-- Map -->
+    <g transform="translate(300,0)">
+        <circle cx="50" cy="50" r="40" fill="#B22222"/>
+        <path d="M50,20 C40,20 35,30 35,40 C35,55 50,70 50,70 C50,70 65,55 65,40 C65,30 60,20 50,20 Z M50,45 C47,45 45,43 45,40 C45,37 47,35 50,35 C53,35 55,37 55,40 C55,43 53,45 50,45 Z" fill="white"/>
+    </g>
+</svg> 
