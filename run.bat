@@ -1,14 +1,18 @@
 @echo off
-REM Set path to your JavaFX SDK lib folder
-set PATH_TO_FX="C:\Users\franck\Desktop\javafx-sdk-24\lib"
+setlocal enabledelayedexpansion
 
-REM Verify JavaFX SDK exists
-if not exist %PATH_TO_FX% (
-    echo ERROR: JavaFX SDK not found at %PATH_TO_FX%
-    echo Please download JavaFX SDK and extract it to the correct location
-    pause
-    exit /b 1
+:: Vérifier si le chemin JavaFX est déjà configuré
+if exist "javafx_path.txt" (
+    set /p JAVAFX_PATH=<javafx_path.txt
+) else (
+    call config.bat
+    if errorlevel 1 exit /b 1
+    set /p JAVAFX_PATH=<javafx_path.txt
 )
+
+echo.
+echo Utilisation de JavaFX depuis: !JAVAFX_PATH!
+echo.
 
 REM Create output directories if they don't exist
 if not exist "classes" mkdir classes
@@ -21,20 +25,24 @@ if not exist "src\main\resources" (
     mkdir "src\main\resources"
 )
 
-echo Compiling...
-javac -d classes --module-path %PATH_TO_FX% --add-modules javafx.controls,javafx.fxml,javafx.graphics,javafx.base ^
-    src/main/java/com/chezoli/*.java
+echo Compilation en cours...
+javac -d classes --module-path "!JAVAFX_PATH!" --add-modules javafx.controls,javafx.fxml,javafx.graphics,javafx.base src/main/java/com/chezoli/*.java
 
 if errorlevel 1 (
-    echo Compilation failed
+    echo.
+    echo [ERREUR] Échec de la compilation.
     pause
     exit /b 1
 )
 
-echo Copying resources...
+echo.
+echo Copie des ressources...
 xcopy /y /s /i "src\main\resources" "classes"
 
-echo Running...
-java --module-path %PATH_TO_FX% --add-modules javafx.controls,javafx.fxml,javafx.graphics,javafx.base -cp classes com.chezoli.MainApp
+echo.
+echo Démarrage de l'application...
+java --module-path "!JAVAFX_PATH!" --add-modules javafx.controls,javafx.fxml,javafx.graphics,javafx.base -cp classes com.chezoli.MainApp
 
+echo.
+echo Application terminée.
 pause 
