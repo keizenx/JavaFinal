@@ -1,22 +1,26 @@
 package com.chezoli;
 
+import com.chezoli.dao.UserDAO;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.text.Text;
-import javafx.scene.text.TextAlignment;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
+import javafx.scene.Node;
+import javafx.scene.layout.Priority;
 
-public class AboutApp {
+public class SignUpApp {
     private MainApp mainApp;
-    private Scene scene;
+    private UserDAO userDAO;
+    private TextField usernameField;
+    private PasswordField passwordField;
+    private PasswordField confirmPasswordField;
+    private Label errorLabel;
 
-    public AboutApp(MainApp mainApp) {
+    public SignUpApp(MainApp mainApp) {
         this.mainApp = mainApp;
+        this.userDAO = new UserDAO();
     }
 
     public Scene createScene() {
@@ -35,21 +39,21 @@ public class AboutApp {
         contentContainer.getChildren().addAll(
             createTopBar(),
             createHeader(),
-            createAboutContent(),
+            createSignUpContent(),
             createFooter()
         );
         
         scrollPane.setContent(contentContainer);
         root.getChildren().add(scrollPane);
         
-        scene = new Scene(root);
+        Scene scene = new Scene(root);
         scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
         
         return scene;
     }
 
-    private VBox createAboutContent() {
-        VBox content = new VBox(50);
+    private VBox createSignUpContent() {
+        VBox content = new VBox(30);
         content.setAlignment(Pos.TOP_CENTER);
         content.setPadding(new Insets(50, 0, 50, 0));
         
@@ -57,71 +61,115 @@ public class AboutApp {
         VBox titleSection = new VBox(10);
         titleSection.setAlignment(Pos.CENTER);
         
-        Label title = new Label("À propos de nous");
-        title.getStyleClass().add("about-title");
+        Label title = new Label("Inscription");
+        title.getStyleClass().add("signup-title");
         
-        Label subtitle = new Label("Découvrez notre histoire et notre passion pour la cuisine authentique");
-        subtitle.getStyleClass().add("about-subtitle");
+        Label subtitle = new Label("Créez votre compte pour commander");
+        subtitle.getStyleClass().add("signup-subtitle");
         
         titleSection.getChildren().addAll(title, subtitle);
+
+        // Form section
+        VBox formSection = new VBox(20);
+        formSection.setAlignment(Pos.CENTER);
+        formSection.setMaxWidth(400);
+        formSection.getStyleClass().add("signup-form");
+
+        usernameField = new TextField();
+        usernameField.setPromptText("Nom d'utilisateur");
+        usernameField.getStyleClass().add("signup-input");
+
+        passwordField = new PasswordField();
+        passwordField.setPromptText("Mot de passe");
+        passwordField.getStyleClass().add("signup-input");
+
+        confirmPasswordField = new PasswordField();
+        confirmPasswordField.setPromptText("Confirmer le mot de passe");
+        confirmPasswordField.getStyleClass().add("signup-input");
+
+        Button signUpButton = new Button("S'inscrire");
+        signUpButton.getStyleClass().add("signup-button");
         
-        // Story section
-        VBox storySection = new VBox(30);
-        storySection.setMaxWidth(800);
-        storySection.setAlignment(Pos.CENTER);
-        storySection.getStyleClass().add("about-story-section");
-        
-        Label storyTitle = new Label("Notre Histoire");
-        storyTitle.getStyleClass().add("story-title");
-        
-        Label storyText = new Label(
-            "Fondé en 2020, Chez Oli est né d'une passion pour la cuisine authentique et le service " +
-            "d'excellence. Notre restaurant combine les saveurs traditionnelles avec une touche moderne, " +
-            "créant une expérience culinaire unique pour nos clients.\n\n" +
-            "Chaque plat est préparé avec des ingrédients soigneusement sélectionnés, en mettant l'accent " +
-            "sur la qualité et la fraîcheur. Notre équipe dévouée travaille sans relâche pour offrir " +
-            "une expérience gastronomique exceptionnelle."
+        errorLabel = new Label();
+        errorLabel.getStyleClass().add("error-label");
+        errorLabel.setVisible(false);
+
+        signUpButton.setOnAction(e -> handleSignUp());
+
+        Hyperlink loginLink = new Hyperlink("Déjà inscrit ? Connectez-vous");
+        loginLink.getStyleClass().add("login-link");
+        loginLink.setOnAction(e -> mainApp.showLogin());
+
+        formSection.getChildren().addAll(
+            usernameField,
+            passwordField,
+            confirmPasswordField,
+            errorLabel,
+            signUpButton,
+            loginLink
         );
-        storyText.setWrapText(true);
-        storyText.getStyleClass().add("story-text");
+
+        content.getChildren().addAll(titleSection, formSection);
+        return content;
+    }
+
+    private void handleSignUp() {
+        String username = usernameField.getText();
+        String password = passwordField.getText();
+        String confirmPassword = confirmPasswordField.getText();
         
-        storySection.getChildren().addAll(storyTitle, storyText);
-        
-        // Values section
-        HBox valuesSection = new HBox(40);
-        valuesSection.setAlignment(Pos.CENTER);
-        valuesSection.getStyleClass().add("values-section");
-        
-        // Create value cards
-        String[][] values = {
-            {"🌟", "Qualité", "Nous sélectionnons les meilleurs ingrédients pour créer des plats exceptionnels"},
-            {"💝", "Passion", "Notre amour pour la cuisine se reflète dans chaque plat que nous servons"},
-            {"🤝", "Service", "Un accueil chaleureux et un service attentionné pour une expérience mémorable"}
-        };
-        
-        for (String[] value : values) {
-            VBox card = new VBox(15);
-            card.getStyleClass().add("value-card");
-            card.setAlignment(Pos.CENTER);
-            card.setPadding(new Insets(30));
-            
-            Text icon = new Text(value[0]);
-            icon.getStyleClass().add("value-icon");
-            
-            Label cardTitle = new Label(value[1]);
-            cardTitle.getStyleClass().add("value-title");
-            
-            Label description = new Label(value[2]);
-            description.setWrapText(true);
-            description.setTextAlignment(TextAlignment.CENTER);
-            description.getStyleClass().add("value-description");
-            
-            card.getChildren().addAll(icon, cardTitle, description);
-            valuesSection.getChildren().add(card);
+        if (username.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
+            showError("Veuillez remplir tous les champs");
+            return;
         }
         
-        content.getChildren().addAll(titleSection, storySection, valuesSection);
-        return content;
+        if (!password.equals(confirmPassword)) {
+            showError("Les mots de passe ne correspondent pas");
+            return;
+        }
+        
+        try {
+            // Vérifier si l'utilisateur existe déjà
+            if (mainApp.getUserDAO().getUser(username) != null) {
+                showError("Ce nom d'utilisateur est déjà pris");
+                return;
+            }
+            
+            // Créer l'utilisateur dans la base de données
+            User newUser = new User(username, password, "USER");
+            if (mainApp.getUserDAO().createUser(newUser)) {
+                System.out.println("Utilisateur créé avec succès: " + username);
+                
+                // Ajouter l'utilisateur à la liste en mémoire
+                mainApp.addUser(newUser);
+                
+                // Connecter l'utilisateur
+                mainApp.setCurrentUser(newUser);
+                mainApp.setLoggedIn(true);
+                
+                // Rediriger vers la page d'accueil
+                showSuccessMessage("Compte créé avec succès");
+            } else {
+                showError("Erreur lors de la création du compte");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            showError("Erreur lors de l'inscription: " + e.getMessage());
+        }
+    }
+    
+    private void showError(String message) {
+        errorLabel.setText(message);
+        errorLabel.setVisible(true);
+    }
+    
+    private void showSuccessMessage(String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Succès");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+        mainApp.showHome();
     }
 
     private HBox createTopBar() {
@@ -190,13 +238,13 @@ public class AboutApp {
         for (String item : menuItems) {
             Label menuItem = new Label(item);
             menuItem.getStyleClass().add("menu-item");
-            if (item.equals("About")) {
-                menuItem.getStyleClass().add("menu-item-active");
-            }
             menuItem.setOnMouseClicked(event -> {
                 switch (item) {
                     case "Home":
                         mainApp.showHome();
+                        break;
+                    case "About":
+                        mainApp.showAbout();
                         break;
                     case "Menu":
                         mainApp.showMenu();
@@ -209,35 +257,12 @@ public class AboutApp {
             navMenu.getChildren().add(menuItem);
         }
         
-        // Ajouter un bouton Admin si l'utilisateur est administrateur
-        if (mainApp.isAdmin()) {
-            Label adminLabel = new Label("Admin");
-            adminLabel.getStyleClass().add("menu-item");
-            adminLabel.getStyleClass().add("admin-item");
-            adminLabel.setOnMouseClicked(event -> mainApp.showAdmin());
-            navMenu.getChildren().add(adminLabel);
-        }
-        
         Region leftSpacer = new Region();
         Region rightSpacer = new Region();
         HBox.setHgrow(leftSpacer, Priority.ALWAYS);
         HBox.setHgrow(rightSpacer, Priority.ALWAYS);
         
-        Button loginButton = new Button("Connexion");
-        loginButton.getStyleClass().add("login-button");
-        loginButton.setVisible(!mainApp.isLoggedIn());
-        loginButton.setOnAction(e -> mainApp.showLogin());
-        
-        Button logoutButton = new Button("Déconnexion");
-        logoutButton.getStyleClass().add("logout-button");
-        logoutButton.setVisible(mainApp.isLoggedIn());
-        logoutButton.setOnAction(e -> {
-            mainApp.setLoggedIn(false);
-            mainApp.setCurrentUser(null);
-            mainApp.showLogin();
-        });
-        
-        header.getChildren().addAll(logoContainer, leftSpacer, navMenu, rightSpacer, loginButton, logoutButton);
+        header.getChildren().addAll(logoContainer, leftSpacer, navMenu, rightSpacer);
         return header;
     }
 
@@ -274,32 +299,14 @@ public class AboutApp {
         footerText.getStyleClass().add("footer-text");
         footerText.setWrapText(true);
 
-        HBox socialIcons = new HBox(15);
-        socialIcons.getStyleClass().add("footer-social");
-        socialIcons.setAlignment(Pos.CENTER_LEFT);
-
-        String[] socialSymbols = {"", "", "", ""};
-        for (String symbol : socialSymbols) {
-            StackPane circle = new StackPane();
-            circle.getStyleClass().add("social-circle");
-            circle.setPrefSize(36, 36);
-            circle.setMinSize(36, 36);
-            
-            Text icon = new Text(symbol);
-            icon.getStyleClass().add("footer-social-icon");
-            
-            circle.getChildren().add(icon);
-            socialIcons.getChildren().add(circle);
-        }
-
-        footerLeft.getChildren().addAll(logoBox, footerText, socialIcons);
+        footerLeft.getChildren().addAll(logoBox, footerText);
 
         HBox footerColumns = new HBox(80);
         footerColumns.getStyleClass().add("footer-columns");
         footerColumns.setAlignment(Pos.TOP_LEFT);
 
         VBox pagesColumn = createFooterColumn("Pages", 
-            new String[]{"Home", "About", "Menu", "Pricing", "Blog", "Contact", "Delivery"});
+            new String[]{"Home", "About", "Menu", "Contact"});
 
         VBox utilityColumn = createFooterColumn("Utility Pages", 
             new String[]{"Start Here", "Styleguide", "Password Protected", "404 Not Found", "Licenses", "Changelog", "View More"});
@@ -313,7 +320,7 @@ public class AboutApp {
         copyrightSection.setPadding(new Insets(20, 0, 0, 0));
         copyrightSection.getStyleClass().add("copyright-section");
 
-        Label copyright = new Label("Copyright © 2024 Identity Creative. All Rights Reserved.");
+        Label copyright = new Label("Copyright © 2024 CHEZ OLI. All Rights Reserved.");
         copyright.getStyleClass().add("copyright");
         copyright.setAlignment(Pos.CENTER);
         copyright.setMaxWidth(Double.MAX_VALUE);

@@ -18,6 +18,7 @@ import java.net.URL;
 
 public class ContactApp {
     private MainApp mainApp;
+    private Scene scene;
 
     public ContactApp(MainApp mainApp) {
         this.mainApp = mainApp;
@@ -46,7 +47,7 @@ public class ContactApp {
         scrollPane.setContent(contentContainer);
         root.getChildren().add(scrollPane);
         
-        Scene scene = new Scene(root);
+        scene = new Scene(root);
         scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
         
         return scene;
@@ -130,24 +131,50 @@ public class ContactApp {
             }
             menuItem.setOnMouseClicked(event -> {
                 switch (item) {
-                    case "Menu":
-                        mainApp.showMenu();
+                    case "Home":
+                        mainApp.showHome();
                         break;
                     case "About":
                         mainApp.showAbout();
+                        break;
+                    case "Menu":
+                        mainApp.showMenu();
                         break;
                 }
             });
             navMenu.getChildren().add(menuItem);
         }
         
-        // Use Region to push items to sides and center the nav menu
+        // Ajouter un bouton Admin si l'utilisateur est administrateur
+        if (mainApp.isAdmin()) {
+            Label adminLabel = new Label("Admin");
+            adminLabel.getStyleClass().add("menu-item");
+            adminLabel.getStyleClass().add("admin-item");
+            adminLabel.setOnMouseClicked(event -> mainApp.showAdmin());
+            navMenu.getChildren().add(adminLabel);
+        }
+        
+        // Boutons de connexion/déconnexion
         Region leftSpacer = new Region();
         Region rightSpacer = new Region();
         HBox.setHgrow(leftSpacer, Priority.ALWAYS);
         HBox.setHgrow(rightSpacer, Priority.ALWAYS);
         
-        header.getChildren().addAll(logoContainer, leftSpacer, navMenu, rightSpacer);
+        Button loginButton = new Button("Connexion");
+        loginButton.getStyleClass().add("login-button");
+        loginButton.setVisible(!mainApp.isLoggedIn());
+        loginButton.setOnAction(e -> mainApp.showLogin());
+        
+        Button logoutButton = new Button("Déconnexion");
+        logoutButton.getStyleClass().add("logout-button");
+        logoutButton.setVisible(mainApp.isLoggedIn());
+        logoutButton.setOnAction(e -> {
+            mainApp.setLoggedIn(false);
+            mainApp.setCurrentUser(null);
+            mainApp.showLogin();
+        });
+        
+        header.getChildren().addAll(logoContainer, leftSpacer, navMenu, rightSpacer, loginButton, logoutButton);
         return header;
     }
     

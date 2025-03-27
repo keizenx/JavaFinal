@@ -26,7 +26,7 @@ if not exist "src\main\resources" (
 )
 
 echo Compilation en cours...
-javac -d classes --module-path "!JAVAFX_PATH!" --add-modules javafx.controls,javafx.fxml,javafx.graphics,javafx.base src/main/java/com/chezoli/*.java
+javac -d classes --module-path "!JAVAFX_PATH!" --add-modules javafx.controls,javafx.fxml,javafx.graphics,javafx.base -cp "lib/*" src/main/java/com/chezoli/*.java src/main/java/com/chezoli/dao/*.java
 
 if errorlevel 1 (
     echo.
@@ -41,7 +41,7 @@ xcopy /y /s /i "src\main\resources" "classes"
 
 echo.
 echo Démarrage de l'application...
-java --module-path "!JAVAFX_PATH!" --add-modules javafx.controls,javafx.fxml,javafx.graphics,javafx.base -cp classes com.chezoli.MainApp
+java --module-path "!JAVAFX_PATH!" --add-modules javafx.controls,javafx.fxml,javafx.graphics,javafx.base -cp "classes;lib/*" com.chezoli.MainApp
 
 echo.
 echo Application terminée.

@@ -9,9 +9,35 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.text.Text;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MenuApp {
     private MainApp mainApp;
+
+    private final String[][] entrees = {
+        {"image_113.png", "ATTIEKE POULET", "1000 franc"},
+        {"image_114.png", "ATTIEKE POISSON", "1000 franc"},
+        {"telechargement_1.png", "GARBA", "1000 franc"}
+    };
+
+    private final String[][] plats = {
+        {"image_115.png", "FRITE POULET", "1000 franc"},
+        {"image_116.png", "CODY'S", "5000 franc"}
+    };
+
+    private final String[][] desserts = {
+        {"image_120.png", "Galette avec sucre", "300 franc"},
+        {"image_121.png", "CREPE SUCRE", "500 franc"},
+        {"image_122.png", "Gateau au four", "500 franc"},
+        {"image_123.png", "Yaourt", "500 franc"}
+    };
+
+    private final String[][] boissons = {
+        {"image_117.png", "ORANGINA", "500 franc"},
+        {"image_118.png", "EAU", "100 franc"},
+        {"image_119.png", "COCA-COLA", "500 franc"}
+    };
 
     public MenuApp(MainApp mainApp) {
         this.mainApp = mainApp;
@@ -123,9 +149,21 @@ public class MenuApp {
                     case "About":
                         mainApp.showAbout();
                         break;
+                    case "Home":
+                        mainApp.showHome();
+                        break;
                 }
             });
             navMenu.getChildren().add(menuItem);
+        }
+        
+        // Ajouter un bouton Admin si l'utilisateur est administrateur
+        if (mainApp.isAdmin()) {
+            Label adminLabel = new Label("Admin");
+            adminLabel.getStyleClass().add("menu-item");
+            adminLabel.getStyleClass().add("admin-item");
+            adminLabel.setOnMouseClicked(event -> mainApp.showAdmin());
+            navMenu.getChildren().add(adminLabel);
         }
         
         Region leftSpacer = new Region();
@@ -133,14 +171,28 @@ public class MenuApp {
         HBox.setHgrow(leftSpacer, Priority.ALWAYS);
         HBox.setHgrow(rightSpacer, Priority.ALWAYS);
         
-        header.getChildren().addAll(logoContainer, leftSpacer, navMenu, rightSpacer);
+        Button loginButton = new Button("Connexion");
+        loginButton.getStyleClass().add("login-button");
+        loginButton.setVisible(!mainApp.isLoggedIn());
+        loginButton.setOnAction(e -> mainApp.showLogin());
+        
+        Button logoutButton = new Button("Déconnexion");
+        logoutButton.getStyleClass().add("logout-button");
+        logoutButton.setVisible(mainApp.isLoggedIn());
+        logoutButton.setOnAction(e -> {
+            mainApp.setLoggedIn(false);
+            mainApp.setCurrentUser(null);
+            mainApp.showLogin();
+        });
+        
+        header.getChildren().addAll(logoContainer, leftSpacer, navMenu, rightSpacer, loginButton, logoutButton);
         return header;
     }
 
     private VBox createMenuContent() {
         VBox content = new VBox(30);
         content.setAlignment(Pos.TOP_CENTER);
-        content.setPadding(new Insets(50, 100, 50, 100));
+        content.setPadding(new Insets(50, 0, 50, 0));
         
         // Title section
         VBox titleSection = new VBox(10);
@@ -149,85 +201,123 @@ public class MenuApp {
         Label title = new Label("Notre Menu");
         title.getStyleClass().add("menu-title");
         
-        Label subtitle = new Label("BIENVENUE SUR LA PAGE DE MENU MERCI NOUS ESPÉRONS FAIRE\nVOTRE BONHEUR");
+        Label subtitle = new Label("Découvrez nos délicieux plats");
         subtitle.getStyleClass().add("menu-subtitle");
         
         titleSection.getChildren().addAll(title, subtitle);
+
+        // Bouton Commander
+        Button commanderButton = new Button("Accéder à la page de commande");
+        commanderButton.getStyleClass().add("order-button");
+        commanderButton.setOnAction(e -> {
+            // Récupérer les articles du menu depuis la base de données
+            List<MenuItem> menuItems = new com.chezoli.dao.MenuItemDAO().getAllMenuItems();
+            mainApp.showOrder("Tout", menuItems);
+        });
         
-        // Menu categories
-        HBox categories = new HBox(20);
-        categories.setAlignment(Pos.CENTER);
-        categories.getStyleClass().add("menu-categories");
+        // Menu sections
+        VBox menuSections = new VBox(50);
+        menuSections.setAlignment(Pos.CENTER);
         
-        String[] categoryNames = {"Tout"};
-        for (String category : categoryNames) {
-            Button categoryBtn = new Button(category);
-            categoryBtn.getStyleClass().add("category-button");
-            categoryBtn.getStyleClass().add("category-button-active");
-            categories.getChildren().add(categoryBtn);
-        }
+        // Utiliser MenuItemDAO pour récupérer les articles depuis la base de données
+        com.chezoli.dao.MenuItemDAO menuItemDAO = new com.chezoli.dao.MenuItemDAO();
+        List<MenuItem> allMenuItems = menuItemDAO.getAllMenuItems();
         
-        // Menu grid
-        GridPane menuGrid = new GridPane();
-        menuGrid.setHgap(30);
-        menuGrid.setVgap(30);
-        menuGrid.setAlignment(Pos.CENTER);
+        // Filtrer les articles par catégorie
+        List<MenuItem> entreesItems = allMenuItems.stream()
+            .filter(item -> "Entrées".equals(item.getCategory()))
+            .collect(java.util.stream.Collectors.toList());
         
-        // Menu items data
-        String[][] menuItems = {
-            {"image_113.png", "ATTIEKE POULET", "1000 franc"},
-            {"image_114.png", "ATTIEKE POISSON", "1000 franc"},
-            {"image_115.png", "FRITE POULET", "1000 franc"},
-            {"image_116.png", "CODY'S", "5000 franc"},
-            {"image_117.png", "ORANGINA", "500 franc"},
-            {"image_118.png", "EAU", "100 franc"},
-            {"image_119.png", "COCA-COLA", "500 franc"},
-            {"image_120.png", "Galette avec sucre", "300 franc"},
-            {"image_121.png", "CREPE SUCRE", "500 franc"},
-            {"image_122.png", "Gateau au four", "500 franc"},
-            {"image_123.png", "Yaourt", "500 franc"},
-            {"telechargement_1.png", "GARBA", "1000 franc"}
-        };
+        List<MenuItem> platsItems = allMenuItems.stream()
+            .filter(item -> "Plats Principaux".equals(item.getCategory()))
+            .collect(java.util.stream.Collectors.toList());
         
-        int col = 0;
-        int row = 0;
+        List<MenuItem> dessertsItems = allMenuItems.stream()
+            .filter(item -> "Desserts".equals(item.getCategory()))
+            .collect(java.util.stream.Collectors.toList());
         
-        for (String[] item : menuItems) {
-            VBox menuItem = new VBox(15);
-            menuItem.getStyleClass().add("menu-item-card");
-            menuItem.setAlignment(Pos.CENTER);
+        List<MenuItem> boissonsItems = allMenuItems.stream()
+            .filter(item -> "Boissons".equals(item.getCategory()))
+            .collect(java.util.stream.Collectors.toList());
+        
+        // Créer les sections de menu
+        menuSections.getChildren().addAll(
+            createCategorySection("Entrées", entreesItems),
+            createCategorySection("Plats Principaux", platsItems),
+            createCategorySection("Desserts", dessertsItems),
+            createCategorySection("Boissons", boissonsItems)
+        );
+        
+        content.getChildren().addAll(titleSection, commanderButton, menuSections);
+        return content;
+    }
+
+    private VBox createCategorySection(String categoryTitle, List<MenuItem> items) {
+        VBox section = new VBox(20);
+        section.setAlignment(Pos.CENTER);
+        
+        Label titleLabel = new Label(categoryTitle);
+        titleLabel.getStyleClass().add("category-title");
+        
+        FlowPane itemsGrid = new FlowPane();
+        itemsGrid.setHgap(30);
+        itemsGrid.setVgap(30);
+        itemsGrid.setAlignment(Pos.CENTER);
+        
+        for (MenuItem item : items) {
+            VBox itemCard = new VBox(10);
+            itemCard.getStyleClass().add("menu-item-card");
+            itemCard.setAlignment(Pos.CENTER);
+            
+            // Image
+            ImageView imageView = new ImageView();
+            imageView.setFitWidth(200);
+            imageView.setFitHeight(200);
+            imageView.setPreserveRatio(true);
+            
+            String imagePath = item.getImagePath();
+            System.out.println("Tentative de chargement de l'image pour: " + item.getName() + " avec URL: " + item.getImageUrl());
+            System.out.println("Chemin d'image résolu: " + imagePath);
             
             try {
-                System.out.println("Trying to load image from: /images/Notre_Menu/" + item[0]);
-                Image image = new Image(getClass().getResourceAsStream("/images/Notre_Menu/" + item[0]));
-                ImageView imageView = new ImageView(image);
-                imageView.setFitWidth(250);
-                imageView.setFitHeight(250);
-                imageView.getStyleClass().add("menu-item-image");
-                
-                Label name = new Label(item[1]);
-                name.getStyleClass().add("menu-item-name");
-                
-                Label price = new Label(item[2]);
-                price.getStyleClass().add("menu-item-price");
-                
-                menuItem.getChildren().addAll(imageView, name, price);
-                
-                menuGrid.add(menuItem, col, row);
-                
-                col++;
-                if (col > 3) {
-                    col = 0;
-                    row++;
+                if (imagePath != null) {
+                    // Vérifier si c'est une URL externe (pour le cas de l'image de remplacement)
+                    if (imagePath.startsWith("http")) {
+                        imageView.setImage(new Image(imagePath));
+                    } else {
+                        imageView.setImage(new Image(imagePath));
+                    }
+                } else {
+                    // Fallback si l'image est null
+                    String defaultPath = getClass().getResource("/images/logo.png").toExternalForm();
+                    imageView.setImage(new Image(defaultPath));
                 }
             } catch (Exception e) {
-                System.err.println("Error loading image: " + item[0]);
-                e.printStackTrace();
+                System.out.println("Erreur lors du chargement de l'image: " + e.getMessage());
+                try {
+                    // Dernière tentative avec un placeholder en ligne
+                    imageView.setImage(new Image("https://dummyimage.com/200x200/cccccc/ffffff.png&text=Image+Non+Disponible"));
+                } catch (Exception ex) {
+                    // Si même le placeholder échoue, ne rien faire
+                }
             }
+            
+            Label nameLabel = new Label(item.getName());
+            nameLabel.getStyleClass().add("menu-item-name");
+            
+            Label descriptionLabel = new Label(item.getDescription());
+            descriptionLabel.getStyleClass().add("menu-item-description");
+            descriptionLabel.setWrapText(true);
+            
+            Label priceLabel = new Label(item.getFormattedPrice());
+            priceLabel.getStyleClass().add("menu-item-price");
+            
+            itemCard.getChildren().addAll(imageView, nameLabel, descriptionLabel, priceLabel);
+            itemsGrid.getChildren().add(itemCard);
         }
         
-        content.getChildren().addAll(titleSection, categories, menuGrid);
-        return content;
+        section.getChildren().addAll(titleLabel, itemsGrid);
+        return section;
     }
 
     private Node createFooter() {
