@@ -1,6 +1,8 @@
 package com.chezoli.dao;
 
 import com.chezoli.MenuItem;
+import com.chezoli.DatabaseConnection;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,9 +14,15 @@ public class MenuItemDAO {
     private static final String DELETE = "DELETE FROM menu_items WHERE id = ?";
     private static final String SELECT_BY_CATEGORY = "SELECT m.*, c.name as category_name FROM menu_items m JOIN categories c ON m.category_id = c.id WHERE c.name = ?";
 
+    private final DatabaseConnection dbConnection;
+
+    public MenuItemDAO() {
+        this.dbConnection = DatabaseConnection.getInstance();
+    }
+
     public List<MenuItem> getAllMenuItems() {
         List<MenuItem> items = new ArrayList<>();
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = dbConnection.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(SELECT_ALL)) {
             
@@ -30,7 +38,7 @@ public class MenuItemDAO {
 
     public List<MenuItem> getMenuItemsByCategory(String category) {
         List<MenuItem> items = new ArrayList<>();
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = dbConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(SELECT_BY_CATEGORY)) {
             
             pstmt.setString(1, category);
@@ -47,7 +55,7 @@ public class MenuItemDAO {
     }
 
     public boolean addMenuItem(MenuItem item) {
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = dbConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(INSERT, Statement.RETURN_GENERATED_KEYS)) {
             
             pstmt.setString(1, item.getName());
@@ -80,7 +88,7 @@ public class MenuItemDAO {
     }
 
     public boolean updateMenuItem(MenuItem item) {
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(UPDATE)) {
             
             stmt.setString(1, item.getName());
@@ -103,6 +111,19 @@ public class MenuItemDAO {
         }
     }
 
+    public boolean deleteMenuItem(int id) {
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(DELETE)) {
+            
+            pstmt.setInt(1, id);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            System.err.println("Erreur lors de la suppression du plat : " + e.getMessage());
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     // Helper method to get category ID
     private int getCategoryId(String categoryName, Connection conn) throws SQLException {
         if (categoryName == null) {
@@ -120,19 +141,6 @@ public class MenuItemDAO {
                 }
             }
         }
-    }
-
-    public boolean deleteMenuItem(int id) {
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(DELETE)) {
-            
-            pstmt.setInt(1, id);
-            return pstmt.executeUpdate() > 0;
-        } catch (SQLException e) {
-            System.err.println("Erreur lors de la suppression du plat : " + e.getMessage());
-            e.printStackTrace();
-        }
-        return false;
     }
 
     private MenuItem createMenuItemFromResultSet(ResultSet rs) throws SQLException {

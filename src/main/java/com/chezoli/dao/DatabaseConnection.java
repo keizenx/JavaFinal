@@ -16,51 +16,79 @@ public class DatabaseConnection {
     private static final String USER = "root";
     private static final String PASSWORD = "franckX";
     private static boolean initialized = false;
+    private static Connection connection = null;
+
+    private DatabaseConnection() {
+        // Private constructor to prevent instantiation
+    }
 
     public static Connection getConnection() throws SQLException {
+        System.out.println("Tentative de connexion à la base de données...");
         if (!initialized) {
+            System.out.println("Base de données non initialisée, initialisation en cours...");
             checkAndInitializeDatabase();
             initialized = true;
         }
 
-        try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            return DriverManager.getConnection(URL, USER, PASSWORD);
-        } catch (ClassNotFoundException e) {
-            throw new SQLException("MySQL JDBC Driver not found.", e);
+        if (connection == null || connection.isClosed()) {
+            try {
+                System.out.println("Création d'une nouvelle connexion...");
+                Class.forName("com.mysql.cj.jdbc.Driver");
+                connection = DriverManager.getConnection(URL, USER, PASSWORD);
+                // S'assurer que la base de données est sélectionnée
+                connection.createStatement().execute("USE chezoli");
+                System.out.println("Connexion établie avec succès!");
+            } catch (ClassNotFoundException e) {
+                System.err.println("Erreur: Driver MySQL non trouvé!");
+                throw new SQLException("MySQL JDBC Driver not found.", e);
+            }
+        } else {
+            // Vérifier si la base de données est toujours sélectionnée
+            try {
+                connection.createStatement().execute("USE chezoli");
+            } catch (SQLException e) {
+                System.err.println("Erreur lors de la sélection de la base de données: " + e.getMessage());
+            }
+        }
+
+        return connection;
+    }
+
+    public static void closeConnection() {
+        if (connection != null) {
+            try {
+                connection.close();
+                connection = null;
+            } catch (SQLException e) {
+                System.err.println("Erreur lors de la fermeture de la connexion: " + e.getMessage());
+                e.printStackTrace();
+            }
         }
     }
 
     private static void checkAndInitializeDatabase() {
-        try {
-            // Se connecter sans spécifier la base de données
-            Connection conn = DriverManager.getConnection(URL_WITHOUT_DB, USER, PASSWORD);
+        System.out.println("Vérification de la base de données...");
+        try (Connection conn = DriverManager.getConnection(URL_WITHOUT_DB, USER, PASSWORD)) {
+            System.out.println("Connexion au serveur MySQL établie");
             
-            // Vérifier si la base de données existe déjà
             if (!databaseExists(conn, "chezoli")) {
-                // Créer la base de données si elle n'existe pas
+                System.out.println("Base de données 'chezoli' non trouvée, création en cours...");
                 createDatabase(conn);
-                
-                // Exécuter le script SQL d'initialisation
-                executeSqlScript(conn);
-                
-                System.out.println("Base de données créée et initialisée avec succès!");
             } else {
-                // Vérifier si les tables existent
-                Connection dbConn = DriverManager.getConnection(URL, USER, PASSWORD);
-                if (!tablesExist(dbConn)) {
-                    // Créer les tables si elles n'existent pas
-                    executeSqlScript(conn);
-                    System.out.println("Tables créées avec succès!");
-                } else {
-                    System.out.println("Base de données déjà initialisée, connexion établie.");
-                }
-                dbConn.close();
+                System.out.println("Base de données 'chezoli' existe déjà");
             }
             
-            conn.close();
+            try (Connection dbConn = DriverManager.getConnection(URL, USER, PASSWORD)) {
+                System.out.println("Connexion à la base de données 'chezoli' établie");
+                if (!tablesExist(dbConn)) {
+                    System.out.println("Tables non trouvées, exécution du script d'initialisation...");
+                    executeSqlScript(dbConn);
+                } else {
+                    System.out.println("Toutes les tables existent déjà");
+                }
+            }
         } catch (SQLException e) {
-            System.err.println("Erreur lors de la vérification/initialisation de la base de données: " + e.getMessage());
+            System.err.println("Erreur lors de l'initialisation de la base de données: " + e.getMessage());
             e.printStackTrace();
         }
     }
@@ -85,9 +113,11 @@ public class DatabaseConnection {
     private static void createDatabase(Connection conn) {
         try {
             Statement stmt = conn.createStatement();
+            System.out.println("Création de la base de données 'chezoli'...");
             stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS chezoli");
             stmt.executeUpdate("USE chezoli");
             stmt.close();
+            System.out.println("Base de données 'chezoli' créée avec succès!");
         } catch (SQLException e) {
             System.err.println("Erreur lors de la création de la base de données: " + e.getMessage());
             e.printStackTrace();
@@ -96,10 +126,19 @@ public class DatabaseConnection {
     
     private static boolean tablesExist(Connection conn) {
         try {
-            ResultSet rs = conn.getMetaData().getTables(null, null, "users", null);
-            boolean exists = rs.next();
-            rs.close();
-            return exists;
+            // Vérifier si toutes les tables nécessaires existent
+            String[] requiredTables = {"users", "categories", "menu_items", "orders", "order_items", "contact_messages"};
+            for (String table : requiredTables) {
+                ResultSet rs = conn.getMetaData().getTables(null, null, table, null);
+                if (!rs.next()) {
+                    System.out.println("Table '" + table + "' non trouvée");
+                    rs.close();
+                    return false;
+                }
+                System.out.println("Table '" + table + "' trouvée");
+                rs.close();
+            }
+            return true;
         } catch (SQLException e) {
             System.err.println("Erreur lors de la vérification de l'existence des tables: " + e.getMessage());
             return false;
@@ -108,6 +147,7 @@ public class DatabaseConnection {
 
     private static void executeSqlScript(Connection conn) {
         try {
+            System.out.println("Chargement du script SQL d'initialisation...");
             // Charger le script SQL depuis les ressources
             InputStream is = DatabaseConnection.class.getResourceAsStream("/db/init.sql");
             if (is == null) {
@@ -123,9 +163,13 @@ public class DatabaseConnection {
             
             Statement stmt = conn.createStatement();
             
+            // S'assurer que la base de données est sélectionnée
+            stmt.execute("USE chezoli");
+            
             for (String sqlInstruction : sqlInstructions) {
                 if (!sqlInstruction.trim().isEmpty()) {
                     try {
+                        System.out.println("Exécution de l'instruction SQL: " + sqlInstruction.trim());
                         stmt.execute(sqlInstruction);
                     } catch (SQLException e) {
                         System.err.println("Erreur lors de l'exécution de l'instruction SQL: " + sqlInstruction);
@@ -136,6 +180,7 @@ public class DatabaseConnection {
             }
             
             stmt.close();
+            System.out.println("Script SQL d'initialisation exécuté avec succès!");
         } catch (SQLException e) {
             System.err.println("Erreur lors de l'exécution du script SQL: " + e.getMessage());
             e.printStackTrace();

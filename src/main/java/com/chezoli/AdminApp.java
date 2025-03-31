@@ -2,6 +2,7 @@ package com.chezoli;
 
 import com.chezoli.dao.MenuItemDAO;
 import com.chezoli.dao.UserDAO;
+import com.chezoli.dao.ContactMessageDAO;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -44,11 +45,14 @@ public class AdminApp {
     private Tab menuManagementTab;
     private Tab userManagementTab;
     private Tab orderManagementTab;
+    private Tab contactMessagesTab;
     private MenuItemDAO menuItemDAO;
     private UserDAO userDAO;
+    private ContactMessageDAO contactMessageDAO;
     private TableView<MenuItem> menuTable;
     private TableView<User> userTable;
     private TableView<MenuItem> menuItemsTable;
+    private TableView<ContactMessage> contactMessagesTable;
 
     // Variables for menu item form
     private TextField nameField;
@@ -64,6 +68,7 @@ public class AdminApp {
         this.mainApp = mainApp;
         this.menuItemDAO = new MenuItemDAO();
         this.userDAO = new UserDAO();
+        this.contactMessageDAO = new ContactMessageDAO();
         createScene();
     }
 
@@ -124,8 +129,12 @@ public class AdminApp {
         orderManagementTab = new Tab("Gestion des Commandes");
         orderManagementTab.setClosable(false);
         setupOrderManagementTab();
+
+        contactMessagesTab = new Tab("Messages de Contact");
+        contactMessagesTab.setClosable(false);
+        contactMessagesTab.setContent(createContactMessagesTab());
         
-        tabPane.getTabs().addAll(menuManagementTab, userManagementTab, orderManagementTab);
+        tabPane.getTabs().addAll(menuManagementTab, userManagementTab, orderManagementTab, contactMessagesTab);
         
         root.getChildren().addAll(header, statsBox, tabPane);
         
@@ -926,5 +935,98 @@ public class AdminApp {
 
         header.getChildren().addAll(title, navMenu);
         return header;
+    }
+
+    private VBox createContactMessagesTab() {
+        VBox content = new VBox(20);
+        content.setPadding(new Insets(20));
+        content.getStyleClass().add("admin-form");
+
+        // Table des messages
+        contactMessagesTable = new TableView<>();
+        contactMessagesTable.setEditable(false);
+
+        TableColumn<ContactMessage, String> nameCol = new TableColumn<>("Nom");
+        nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
+
+        TableColumn<ContactMessage, String> emailCol = new TableColumn<>("Email");
+        emailCol.setCellValueFactory(new PropertyValueFactory<>("email"));
+
+        TableColumn<ContactMessage, String> subjectCol = new TableColumn<>("Sujet");
+        subjectCol.setCellValueFactory(new PropertyValueFactory<>("subject"));
+
+        TableColumn<ContactMessage, String> messageCol = new TableColumn<>("Message");
+        messageCol.setCellValueFactory(new PropertyValueFactory<>("message"));
+        messageCol.setPrefWidth(300);
+
+        TableColumn<ContactMessage, String> dateCol = new TableColumn<>("Date");
+        dateCol.setCellValueFactory(new PropertyValueFactory<>("date"));
+
+        TableColumn<ContactMessage, Void> actionsCol = new TableColumn<>("Actions");
+        actionsCol.setCellFactory(param -> new TableCell<>() {
+            private final Button deleteButton = new Button("Supprimer");
+            private final Button viewButton = new Button("Voir");
+            private final HBox buttonsBox = new HBox(5);
+
+            {
+                deleteButton.setOnAction(event -> {
+                    ContactMessage message = getTableView().getItems().get(getIndex());
+                    if (showConfirmDialog("Supprimer le message", "Êtes-vous sûr de vouloir supprimer ce message ?")) {
+                        contactMessageDAO.deleteMessage(message.getId());
+                        refreshContactMessages();
+                    }
+                });
+
+                viewButton.setOnAction(event -> {
+                    ContactMessage message = getTableView().getItems().get(getIndex());
+                    showMessageDetails(message);
+                });
+
+                buttonsBox.getChildren().addAll(viewButton, deleteButton);
+            }
+
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                setGraphic(empty ? null : buttonsBox);
+            }
+        });
+
+        contactMessagesTable.getColumns().addAll(nameCol, emailCol, subjectCol, messageCol, dateCol, actionsCol);
+        refreshContactMessages();
+
+        content.getChildren().add(contactMessagesTable);
+        return content;
+    }
+
+    private void refreshContactMessages() {
+        List<ContactMessage> messages = contactMessageDAO.getAllMessages();
+        contactMessagesTable.setItems(FXCollections.observableArrayList(messages));
+    }
+
+    private void showMessageDetails(ContactMessage message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Détails du message");
+        alert.setHeaderText("Message de " + message.getName());
+        
+        VBox content = new VBox(10);
+        content.setPadding(new Insets(10));
+        
+        content.getChildren().addAll(
+            new Label("De: " + message.getName()),
+            new Label("Email: " + message.getEmail()),
+            new Label("Sujet: " + message.getSubject()),
+            new Label("Date: " + message.getDate()),
+            new Separator(),
+            new Label("Message:"),
+            new TextArea(message.getMessage()) {{
+                setEditable(false);
+                setWrapText(true);
+                setPrefRowCount(5);
+            }}
+        );
+        
+        alert.getDialogPane().setContent(content);
+        alert.showAndWait();
     }
 } 

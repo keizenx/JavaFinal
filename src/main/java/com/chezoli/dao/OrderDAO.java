@@ -3,6 +3,8 @@ package com.chezoli.dao;
 import com.chezoli.MenuItem;
 import com.chezoli.Order;
 import com.chezoli.MainApp;
+import com.chezoli.DatabaseConnection;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,14 +22,18 @@ public class OrderDAO {
     private static final String SELECT_ORDERS_BY_USER_SQL = 
         "SELECT id, user_id, order_date, status, payment_method FROM orders WHERE user_id = ? ORDER BY order_date DESC";
 
-    private MenuItemDAO menuItemDAO;
+    private final DatabaseConnection dbConnection;
+    private final MenuItemDAO menuItemDAO;
 
     public OrderDAO() {
+        this.dbConnection = DatabaseConnection.getInstance();
         this.menuItemDAO = new MenuItemDAO();
     }
 
     public boolean createOrder(Order order) {
-        try (Connection conn = DatabaseConnection.getConnection()) {
+        Connection conn = null;
+        try {
+            conn = dbConnection.getConnection();
             conn.setAutoCommit(false);
             
             try (PreparedStatement orderStmt = conn.prepareStatement(CREATE_ORDER_SQL, Statement.RETURN_GENERATED_KEYS)) {
@@ -64,16 +70,26 @@ public class OrderDAO {
                         throw new SQLException("Creating order failed, no ID obtained.");
                     }
                 }
-            } catch (SQLException e) {
-                conn.rollback();
-                e.printStackTrace();
-                return false;
-            } finally {
-                conn.setAutoCommit(true);
             }
         } catch (SQLException e) {
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
             e.printStackTrace();
             return false;
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
@@ -86,9 +102,9 @@ public class OrderDAO {
                       "LEFT JOIN categories c ON mi.category_id = c.id " +
                       "ORDER BY o.id, o.order_date DESC";
                       
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(query);
-             ResultSet rs = stmt.executeQuery()) {
+        try (Connection conn = dbConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(query)) {
             
             int currentOrderId = -1;
             Order currentOrder = null;
@@ -99,8 +115,6 @@ public class OrderDAO {
                 if (orderId != currentOrderId) {
                     if (currentOrder != null) {
                         orders.add(currentOrder);
-                        System.out.println("Commande #" + currentOrderId + " ajoutée avec " + 
-                                          currentOrder.getItems().size() + " articles");
                     }
                     
                     currentOrder = new Order();
@@ -110,11 +124,6 @@ public class OrderDAO {
                     currentOrder.setStatus(rs.getString("o.status"));
                     currentOrder.setPaymentMethod(rs.getString("o.payment_method"));
                     currentOrderId = orderId;
-                    
-                    System.out.println("Nouvelle commande trouvée : #" + orderId + 
-                                      " - Date : " + rs.getTimestamp("o.order_date") + 
-                                      " - Client : " + rs.getString("o.user_id") + 
-                                      " - Statut : " + rs.getString("o.status"));
                 }
                 
                 // Vérifier si cette ligne contient un article de commande
@@ -129,19 +138,12 @@ public class OrderDAO {
                     menuItem.setId(rs.getInt("mi.id"));
                     
                     currentOrder.addItem(new MainApp.OrderItem(menuItem, rs.getInt("oi.quantity")));
-                    
-                    System.out.println("  - Article ajouté : " + menuItem.getName() + 
-                                      " - Quantité : " + rs.getInt("oi.quantity"));
                 }
             }
             
             if (currentOrder != null) {
                 orders.add(currentOrder);
-                System.out.println("Commande #" + currentOrderId + " ajoutée avec " + 
-                                  currentOrder.getItems().size() + " articles");
             }
-            
-            System.out.println("Nombre total de commandes récupérées : " + orders.size());
             
         } catch (SQLException e) {
             System.err.println("Erreur lors de la récupération des commandes : " + e.getMessage());
@@ -161,7 +163,7 @@ public class OrderDAO {
                        "WHERE o.user_id = ? " +
                        "ORDER BY o.id, o.order_date DESC";
                       
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
             
             stmt.setString(1, userId);
@@ -216,7 +218,7 @@ public class OrderDAO {
 
     public boolean updateOrderStatus(int orderId, String newStatus) {
         String sql = "UPDATE orders SET status = ? WHERE id = ?";
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             
             stmt.setString(1, newStatus);
@@ -261,7 +263,7 @@ public class OrderDAO {
                       "JOIN categories c ON mi.category_id = c.id " +
                       "WHERE oi.order_id = ?";
                       
-        try (Connection conn = DatabaseConnection.getConnection();
+        try (Connection conn = dbConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(query)) {
             
             stmt.setInt(1, orderId);

@@ -49,6 +49,16 @@ CREATE TABLE IF NOT EXISTS order_items (
     FOREIGN KEY (menu_item_id) REFERENCES menu_items(id)
 );
 
+-- Création de la table des messages de contact
+CREATE TABLE IF NOT EXISTS contact_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    subject VARCHAR(200) NOT NULL,
+    message TEXT NOT NULL,
+    date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Insertion des catégories par défaut seulement si elles n'existent pas
 INSERT IGNORE INTO categories (name) VALUES 
 ('Entrées'),

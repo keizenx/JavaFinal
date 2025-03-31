@@ -940,3 +940,56 @@
     -fx-font-size: 14px;
     -fx-text-fill: #6c757d;
 }
+
+/* Contact Page Specific Styles */
+.contact-info {
+    -fx-background-color: #f8f9fa;
+    -fx-padding: 30;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.1), 10, 0, 0, 0);
+    -fx-background-radius: 8;
+}
+
+.info-title {
+    -fx-font-family: "Playfair Display", serif;
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1F1F1F;
+    -fx-padding: 0 0 20 0;
+}
+
+.info-icon {
+    -fx-font-size: 20px;
+    -fx-text-fill: #B22F3D;
+}
+
+.info-text {
+    -fx-font-size: 14px;
+    -fx-text-fill: #666666;
+}
+
+.form-title {
+    -fx-font-family: "Playfair Display", serif;
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1F1F1F;
+    -fx-padding: 0 0 20 0;
+}
+
+.error {
+    -fx-border-color: #dc3545 !important;
+    -fx-border-width: 2 !important;
+}
+
+.error .tooltip {
+    -fx-background-color: #dc3545;
+    -fx-text-fill: white;
+}
+
+.social-icon {
+    -fx-font-size: 18px;
+    -fx-cursor: hand;
+}
+
+.social-icon:hover {
+    -fx-text-fill: #B22F3D;
+}
